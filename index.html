@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Index
+{% endblock %}
+
+{% block main %}
+<h1>Welcome {{user}}</h1>
+<h3>Here is your current portfolio</h2>
+    <table style = "width:60%" align=center>
+        <tr>
+            <th>Ticker</th><th>Shares</th><th>Price</th><th>Value</th>
+        </tr>
+            {% for i in range(length) %}
+            <tr>
+                <td>{{tickers[i]['ticker']}}</td><td>{{shares[i]}}</td><td>{{prices[i]}}</td><td>{{stockvalue[i]}}</td>
+            </tr>
+            {% endfor %}
+        </tr>
+    </table>
+    <form action="{{ url_for('quote') }}" method="post">
+        <fieldset>
+            <div class="form-group">
+                Cash={{cash}}, Total Stock Value={{totalstock}}, Total Portfoli Value={{totalvalue}}
+            </div>
+            <div class="form-group">
+                <input autocomplete="off" autofocus class="form-control" name="add" placeholder="Enter cash to add" type="text"/>
+                <button class="btn btn-default" type="submit">Add Cash</button>
+            </div>
+        </fieldset>
+    </form>
+{% endblock %}
