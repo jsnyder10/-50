@@ -1,28 +1,35 @@
-@app.route("/sell", methods=["GET", "POST"])
+@app.route("/")
 #@login_required
-def sell():
-    rows = db.execute("SELECT * FROM users WHERE username = :username", username="dog")
+def index():
+    rows = db.execute("SELECT * FROM users WHERE username = :username", username='dog')
     session["user_id"] = rows[0]["id"]
     
+    user=db.execute("SELECT * FROM users WHERE id = :id", id=session["user_id"])
+    tickers=db.execute("SELECT DISTINCT ticker FROM portfolio WHERE id = :id", id=session["user_id"])
+    shares=[]
+    prices=[]
+    stockvalue=[]
+    totalstock=0
+    totalvalue=0
+    cash=user[0]['cash']
+    length=len(tickers)
+    for i in range(length):
+        shares.append(db.execute("SELECT SUM(quantity) AS shares FROM portfolio where id=:id AND ticker=:ticker",id=session["user_id"], ticker=tickers[i]['ticker'])[0]['shares'])
+        prices.append(lookup(tickers[i]['ticker'])['price'])
+        stockvalue.append(shares[i]*prices[i])
+        totalstock+=stockvalue[i]
+        prices[i]=usd(prices[i])
+        stockvalue[i]=usd(stockvalue[i])
+    totalvalue=totalstock+cash
+    
     if request.method == "POST":
-        if request.form["ticker"]:
-            ticker=request.form["ticker"]
-            toSell=request.form["quantity"]
-            print("Ticker=",request.form["ticker"])
-            print("Quantity=",toSell)
-            return render_template("sold.html", ticker=ticker, toSell=toSell)
-        else:
-            return apology("Failed to SELL")
-    elif request.method=="GET":
-        shares=[]
-        prices=[]
-        tickers=db.execute("SELECT DISTINCT ticker FROM portfolio WHERE id = :id", id=session["user_id"])
-        length=len(tickers)
-        i=0
-        for ticker in tickers:
-            shares.append(db.execute("SELECT SUM(quantity) AS shares FROM portfolio where id=:id AND ticker=:ticker",id=session["user_id"], ticker=ticker['ticker'])[0]['shares'])
-            prices.append(lookup(ticker['ticker'])['price'])
-            #stockvalue.append(round(shares[i][0]['shares']*price[i]['price'],2))
-            #totalstock+=stockvalue[i]
-            i+=1
-        return render_template("sell.html", length=length, shares=shares, tickers=tickers)
+        print("Post")
+        cash=db.execute("SELECT * FROM users WHERE id = :id", id=session["user_id"][0]['cash'])
+        print("cash=",cash)
+        add=request.form.get("add")
+        print("add=",add)
+        db.execute("UPDATE users SET cash = :cash WHERE id = :id", cash=cash+add, id=session["user_id"])
+        return render_template("index.html", user=user[0]['username'], tickers=tickers, length=length, shares=shares, prices=prices, cash=usd(cash), stockvalue=stockvalue, totalstock=usd(totalstock), totalvalue=usd(totalvalue))
+    else:
+        print("Get")
+        return render_template("index.html", user=user[0]['username'], tickers=tickers, length=length, shares=shares, prices=prices, cash=usd(cash), stockvalue=stockvalue, totalstock=usd(totalstock), totalvalue=usd(totalvalue))
